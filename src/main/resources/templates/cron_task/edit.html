@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.w3.org/1999/xhtml">
+<head>
+    <meta charset="UTF-8">
+    <title></title>
+    <div th:include="public/css"></div>
+    <style>
+        .help-icon{
+            margin-left:10px;
+            margin-right: 10px;
+        }
+        .help-icon:hover{
+            cursor: pointer;
+        }
+         .icon {
+             width: 1em;
+             height: 1em;
+             vertical-align: -0.15em;
+             fill: currentColor;
+             overflow: hidden;
+         }
+        .layui-table-view .layui-table {width:100%}
+    </style>
+    <script src="/static/js/iconfont1.js"></script>
+</head>
+<body>
+
+
+<fieldset class="layui-elem-field layui-field-title" style="margin-top: 20px;">
+    <legend><span th:switch="${vo}">
+        <span th:case="null">新增</span>
+        <span th:case="*">编辑</span>
+    </span>任务</legend>
+</fieldset>
+<!--action="/CronTask/doUpdate" method="post"-->
+<form class="layui-form" >
+    <div class="layui-form-item"  style="width:60%">
+        <div class="layui-form-item">
+            <label class="layui-form-label">项目所属</label>
+            <div class="layui-input-inline">
+                <select name="cateId" lay-verify="required">
+                    <option value="0">请选择</option>
+                    <div th:each="cate:${cateList}">
+                        <option th:value="${cate.id}" th:text="${cate.name}"
+                                th:selected="${cate.id eq vo?.cateId}"
+                        ></option>
+                    </div>
+                </select>
+            </div>
+        </div>
+        <div class="layui-form-item">
+            <label class="layui-form-label">备注</label>
+            <div class="layui-input-block">
+                <input type="text" name="remark" th:value="${vo?.remark}"  width="70%" placeholder="请输入备注说明" autocomplete="off" class="layui-input" >
+            </div>
+        </div>
+        <div class="layui-form-item">
+            <label class="layui-form-label">cron表达式</label>
+            <div class="layui-input-inline">
+                <input type="text" style="font-size:18px;" name="cronExpression" th:value="${vo?.cronExpression}" lay-verify="required" autocomplete="off" class="layui-input">
+            </div>
+            <div class="layui-input-inline">
+                <i class="layui-icon help-icon">&#xe607;</i>
+            </div>
+            <div class="layui-form-mid layui-word-aux ">注意：此处cron表达式比crontab多一位（第一位是秒）</div>
+        </div>
+
+        <div class="layui-form-item">
+            <label class="layui-form-label">服务器地址</label>
+            <div class="layui-input-block">
+                <input type="text" name="serverUrl" lay-verify="required" width="70%" placeholder="请输入服务器地址" autocomplete="off" class="layui-input" th:value="${vo?.serverUrl}">
+            </div>
+        </div>
+        <div class="layui-form-item">
+            <label class="layui-form-label">请求路径</label>
+            <div class="layui-input-block">
+                <input type="text" name="serverPath" lay-verify="required" width="70%" placeholder="请输入请求路径" autocomplete="off" class="layui-input" th:value="${vo?.serverPath}">
+            </div>
+        </div>
+
+        <div class="layui-form-item">
+            <label class="layui-form-label">请求方式</label>
+            <div class="layui-input-block">
+                <input type="radio" name="serverMethod" lay-verify="required" value="GET" title="GET" checked >
+                <input type="radio" name="serverMethod" lay-verify="required" value="POST" title="POST" th:checked="${vo?.serverMethod eq 'POST'}">
+            </div>
+        </div>
+
+        <div class="layui-form-item">
+            <label class="layui-form-label">参数格式</label>
+            <div class="layui-input-block">
+                <input type="radio" name="parameterType" lay-verify="required" p-type="none" value="none" title="none" checked th:checked="${vo?.parameterType eq 'none'}" lay-filter="parameterType">
+                <input type="radio" name="parameterType" lay-verify="required" p-type="form" value="form-data" title="form-data" th:checked="${vo?.parameterType eq 'form-data'}" lay-filter="parameterType">
+                <input type="radio" name="parameterType" lay-verify="required" p-type="text" value="application/json" title="application/json" th:checked="${vo?.parameterType eq 'application/json'}" lay-filter="parameterType">
+                <input type="radio" name="parameterType" lay-verify="required" p-type="form" value="x-www-form-urlencoded" title="x-www-form-urlencoded" th:checked="${vo?.parameterType eq 'x-www-form-urlencoded'}" lay-filter="parameterType">
+                <input type="radio" name="parameterType" lay-verify="required" p-type="text" value="text" title="text" th:checked="${vo?.parameterType eq 'text'}" lay-filter="parameterType">
+            </div>
+        </div>
+
+        <div class="layui-form-item" id="parameter-text" style="display: none">
+            <label class="layui-form-label">请求参数/<span id="parameter-text-context"></span></label>
+            <div class="layui-input-block">
+                <textarea name="serverParameter" id="parameterData" rows="5"  width="70%" placeholder="请输入请求参数" autocomplete="off" class="layui-textarea" th:text="${vo?.serverParameter}"></textarea>
+            </div>
+        </div>
+        <div class="layui-form-item" id="parameter-form" style="display: none">
+            <label class="layui-form-label">请求参数/<span id="parameter-form-context"></span></label>
+            <div class="layui-input-block">
+                <table class="layui-table" style="fixed:'right'" id="parameterTable" lay-filter="pTable"></table>
+            </div>
+        </div>
+
+        <div class="layui-form-item">
+            <label class="layui-form-label">状态</label>
+            <div class="layui-input-block">
+                <input type="radio" name="status" lay-verify="required" value="0" title="禁用" checked >
+                <input type="radio" name="status" lay-verify="required" value="1" title="正常" th:checked="${vo?.status eq 1}">
+            </div>
+        </div>
+    </div>
+    <input type="hidden" name="id" th:value="${vo?.id}">
+    <div class="layui-form-item">
+        <div class="layui-input-block">
+            <button class="layui-btn" lay-submit="" lay-filter="form1">提交</button>
+            <button type="reset" class="layui-btn layui-btn-primary">重置</button>
+        </div>
+    </div>
+</form>
+
+</body>
+<div th:include="public/js"></div>
+
+<script th:inline="none">
+    var data = new Array();
+    for (var i = 0; i < 10; i++) {
+        var formdata = new Object();
+        formdata.key = "";
+        formdata.value = "";
+        data.push(formdata);
+    }
+    if(!$("#parameterData").val() == ""){
+
+
+    setTimeout(function () {
+        var type=$('input:radio[name="parameterType"]:checked').attr("p-type");
+        var title=$('input:radio[name="parameterType"]:checked').attr("title");
+        if(type == 'text'){
+            //data.field.serverParameter = $("#parameterData").val();
+            console.log("text")
+        }else{
+            data = new Array();
+            table = layui.table;
+
+
+
+            var json = JSON.parse($("#parameterData").val());
+            console.log("222"+json);
+            for(var key in json){
+                var formdata = new Object();
+                formdata.key = key;
+                formdata.value = json[key];
+                data.push(formdata);
+            }
+
+        }
+        $("#parameter-"+type+"-context").text(title);
+        $("#parameter-"+type).show();
+        // table
+        layui.use('table', function(){
+            var table = layui.table;
+
+            //展示已知数据
+            table.render({
+                elem: '#parameterTable'
+                ,cols: [[ //标题栏
+                    {field: 'key', title: 'key', width: 120, edit: 'text'}
+                    ,{field: 'value', title: 'value', width: 120, edit: 'text'}
+                ]]
+                ,data: data
+                // ,skin: 'line' //表格风格
+                ,even: false
+                //,page: true //是否显示分页
+                //,limits: [5, 7, 10]
+                //,limit: 5 //每页默认显示的数量
+            });
+            //监听单元格编辑
+            table.on('edit(pTable)', function(obj){
+                var value = obj.value //得到修改后的值
+                    ,data = obj.data //得到所在行所有键值
+                    ,field = obj.field; //得到字段
+                // layer.msg('[ID: '+ data.id +'] ' + field + ' 字段更改为：'+ value);
+            });
+        });
+
+    },100);
+    }
+
+    layui.use(['form','table'], function(){
+        var form = layui.form , layer = layui.layer, table = layui.table;;
+
+        //监听提交
+        form.on('submit(form1)', function(data){
+            console.log("data-----"+layui.table.cache.tablename);
+            console.log("data-----"+JSON.stringify(table.cache));
+            var pType=$('input:radio[name="parameterType"]:checked').attr("p-type");
+            if(pType == 'text'){
+                data.field.serverParameter = $("#parameterData").val();
+            }else{
+                var tableArray = table.cache.parameterTable;
+                var objParameter = new Object();
+                for(var i in tableArray){
+                    var key ;
+                    var value;
+                    if(tableArray[i].key){
+                        key = tableArray[i].key;
+                    }
+                    if(tableArray[i].key){
+                        value = tableArray[i].value;
+                    }
+                    if(tableArray[i].key){
+                        objParameter[key] = value;
+                    }
+                }
+                data.field.serverParameter = JSON.stringify(objParameter);
+            }
+
+            console.log(data.field.serverParameter);
+            api.post("/CronTask/doUpdate",data.field);
+            return false;
+        });
+
+        $('.help-icon').hover(function () {
+            layer.tips('查看帮助', '.help-icon', {
+                tips: 1
+            });
+        },function(){});
+
+        $('.help-icon').on('click',function(){
+            layer.open({
+                type: 2,
+                title: 'cron表达式帮助',
+                shadeClose: true,
+                shade: false,
+                maxmin: true, //开启最大化最小化按钮
+                area: ['893px', '500px'],
+                content: '/CronTask/help'
+            });
+        });
+
+        form.on('radio(parameterType)', function () {
+            console.log(this.getAttribute("p-type"));
+            var type = this.getAttribute("p-type");
+            $("#parameter-form").hide();
+            $("#parameter-text").hide();
+            $("#parameter-"+type).show();
+            var title = this.getAttribute("title");
+            $("#parameter-"+type+"-context").text(title);
+        });
+    });
+    // table
+    layui.use('table', function(){
+        var table = layui.table;
+
+        //展示已知数据
+        table.render({
+            elem: '#parameterTable'
+            ,cols: [[ //标题栏
+                 {field: 'key', title: 'key', width: 120, edit: 'text'}
+                ,{field: 'value', title: 'value', width: 120, edit: 'text'}
+            ]]
+            ,data: data
+            // ,skin: 'line' //表格风格
+            ,even: false
+            //,page: true //是否显示分页
+            //,limits: [5, 7, 10]
+            //,limit: 5 //每页默认显示的数量
+        });
+        //监听单元格编辑
+        table.on('edit(pTable)', function(obj){
+            var value = obj.value //得到修改后的值
+                ,data = obj.data //得到所在行所有键值
+                ,field = obj.field; //得到字段
+            // layer.msg('[ID: '+ data.id +'] ' + field + ' 字段更改为：'+ value);
+        });
+    });
+
+</script>
+</html>
